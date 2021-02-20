@@ -2,18 +2,22 @@ package main
 
 import (
 	// "encoding/json"
+
+	"encoding/json"
 	"fmt"
 	"log"
+	"os"
 
 	// "os"
 
 	"github.com/gocolly/colly"
 )
 
-type post struct {
-	Title   string
-	Upvotes string
-	Link    string
+// post struct
+type Post struct {
+	Title   string `json:"title"`
+	Upvotes string `json:"upvotes"`
+	Link    string `json:"link"`
 }
 
 func main() {
@@ -43,13 +47,21 @@ func visitSite(link string) {
 	})
 
 	c.OnHTML("div.thing", func(e *colly.HTMLElement) {
-		// handle selectors
+		// grab title
 		title := e.ChildText("a.title.may-blank")
-		upvotes := e.ChildText("div.score.likes")
+
+		// grab upvotes
+		upvotes := findUpvotes(e)
+
+		// grab link
 		link = e.ChildAttr("a.title.may-blank", "href")
-		// call method
-		findPosts(link, title, upvotes, e)
-		// dataToJSON(posts, "output.json")
+		link = "https://old.reddit.com" + link
+
+		// put data into struct
+		posts := findPosts(link, title, upvotes, e)
+
+		// jsonify data
+		dataToJSON(posts, "output.json")
 	})
 
 	// visit out base URL
@@ -57,12 +69,12 @@ func visitSite(link string) {
 
 }
 
-func findPosts(link, title, upvotes string, e *colly.HTMLElement) []post {
+func findPosts(link, title, upvotes string, e *colly.HTMLElement) []Post {
 	// All Posts
-	var allPosts []post
+	var allPosts []Post
 
 	// adds all posts to Post Struct
-	posts := append(allPosts, post{title, upvotes, link})
+	posts := append(allPosts, Post{title, upvotes, link})
 
 	// print slice check
 	// fmt.Println(posts)
@@ -70,12 +82,29 @@ func findPosts(link, title, upvotes string, e *colly.HTMLElement) []post {
 	return posts
 }
 
-// func dataToJSON(posts []post, fileName string) {
-// 	postJSON, err := json.MarshalIndent(posts, "", " ")
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	}
-// 	f, err := os.Create(fileName)
-// 	f.Write(postJSON)
-// 	f.Close()
-// }
+func findUpvotes(e *colly.HTMLElement) string {
+	upvotes := e.ChildText("div.score.likes")
+
+	// handling case of not having upvotes
+	if upvotes == "•" {
+		upvotes = "0"
+	}
+
+	return upvotes
+}
+
+func dataToJSON(posts []Post, fileName string) {
+
+	jsonData, err := json.MarshalIndent(posts, "", "    ")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(string(jsonData))
+
+	f, err := os.Create(fileName)
+	if err != nil {
+		panic(err)
+	}
+
+	f.Write(jsonData)
+}
