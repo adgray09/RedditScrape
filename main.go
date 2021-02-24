@@ -23,8 +23,7 @@ var allPosts []Post
 
 func main() {
 
-	var link string
-	link = "https://old.reddit.com/r/wow/"
+	link := "https://old.reddit.com/r/wow/"
 
 	// call Colly method
 	visitSite(link)
@@ -48,44 +47,28 @@ func visitSite(link string) {
 	})
 
 	c.OnHTML("div.thing", func(e *colly.HTMLElement) {
-		// grab title
-		title := e.ChildText("a.title.may-blank")
-
-		// grab upvotes
-		upvotes := findUpvotes(e)
-
-		// grab link
-		link = e.ChildAttr("a.title.may-blank", "href")
-		link = "https://old.reddit.com" + link
-
-		// put data into struct
-		posts := findPosts(link, title, upvotes, e)
 
 		// jsonify data
-		dataToJSON(posts, "output.json")
+		dataToJSON(findPosts(e), "output.json")
 	})
 
-	// c.OnHTML(".nav-buttons", func(e *colly.HTMLElement) {
-	// 	e.Request.Visit(e.ChildAttr("a", "href"))
-	// })
+	c.OnHTML(".nav-buttons", func(e *colly.HTMLElement) {
+		fmt.Println("NEXT HIT")
+		e.Request.Visit(e.ChildAttr("a", "href"))
+	})
 
 	// visit our base URL
 	c.Visit(link)
 
+	c.Wait()
+
 }
 
-func findPosts(link, title, upvotes string, e *colly.HTMLElement) []Post {
+func findPosts(e *colly.HTMLElement) []Post {
 
-	// adds all posts to Post Struct
-	allPosts = append(allPosts, Post{title, upvotes, link})
-
-	// print slice check
-	// fmt.Println(posts)
-
-	return allPosts
-}
-
-func findUpvotes(e *colly.HTMLElement) string {
+	link := e.ChildAttr("a.title.may-blank", "href")
+	link = "https://old.reddit.com" + link
+	title := e.ChildText("a.title.may-blank")
 	upvotes := e.ChildText("div.score.likes")
 
 	// handling case of not having upvotes
@@ -93,7 +76,10 @@ func findUpvotes(e *colly.HTMLElement) string {
 		upvotes = "0"
 	}
 
-	return upvotes
+	// add data to slice
+	allPosts = append(allPosts, Post{title, upvotes, link})
+
+	return allPosts
 }
 
 func dataToJSON(posts []Post, fileName string) {
