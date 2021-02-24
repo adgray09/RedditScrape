@@ -102,7 +102,7 @@ func dataToJSON(posts []Post, fileName string) {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(string(jsonData))
+	// fmt.Println(string(jsonData))
 
 	f, err := os.Create(fileName)
 	if err != nil {
