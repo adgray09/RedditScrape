@@ -1,8 +1,6 @@
 package main
 
 import (
-	// "encoding/json"
-
 	"encoding/json"
 	"fmt"
 	"log"
@@ -19,6 +17,9 @@ type Post struct {
 	Upvotes string `json:"upvotes"`
 	Link    string `json:"link"`
 }
+
+// All Posts
+var allPosts []Post
 
 func main() {
 
@@ -64,22 +65,24 @@ func visitSite(link string) {
 		dataToJSON(posts, "output.json")
 	})
 
-	// visit out base URL
+	// c.OnHTML(".nav-buttons", func(e *colly.HTMLElement) {
+	// 	e.Request.Visit(e.ChildAttr("a", "href"))
+	// })
+
+	// visit our base URL
 	c.Visit(link)
 
 }
 
 func findPosts(link, title, upvotes string, e *colly.HTMLElement) []Post {
-	// All Posts
-	var allPosts []Post
 
 	// adds all posts to Post Struct
-	posts := append(allPosts, Post{title, upvotes, link})
+	allPosts = append(allPosts, Post{title, upvotes, link})
 
 	// print slice check
 	// fmt.Println(posts)
 
-	return posts
+	return allPosts
 }
 
 func findUpvotes(e *colly.HTMLElement) string {
@@ -107,4 +110,7 @@ func dataToJSON(posts []Post, fileName string) {
 	}
 
 	f.Write(jsonData)
+
+	f.Close()
+
 }
