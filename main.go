@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -25,14 +26,19 @@ func main() {
 
 	link := "https://old.reddit.com/r/wow/"
 
-	// call Colly method
-	visitSite(link)
+	var scrapeDepth int
+	flag.IntVar(&scrapeDepth, "depth", 5, "How many Subreddits you'd like to scrape")
+	flag.Parse()
 
+	visitSite(scrapeDepth, link)
 }
 
-func visitSite(link string) {
+func visitSite(depth int, link string) {
 
-	c := colly.NewCollector()
+	c := colly.NewCollector(
+		colly.Async(),
+		colly.MaxDepth(depth),
+	)
 
 	c.OnRequest(func(r *colly.Request) {
 		fmt.Println("Visiting", r.URL)
@@ -44,15 +50,18 @@ func visitSite(link string) {
 
 	c.OnResponse(func(r *colly.Response) {
 		fmt.Println("Visited", r.Request.URL)
+
+		// Seeing if session cookies are passed
+		// cookies := c.Cookies(r.Request.URL.String())
+		// fmt.Println(cookies)
 	})
 
 	c.OnHTML("div.thing", func(e *colly.HTMLElement) {
-
 		// jsonify data
 		dataToJSON(findPosts(e), "output.json")
 	})
 
-	c.OnHTML(".nav-buttons", func(e *colly.HTMLElement) {
+	c.OnHTML("span.next-button", func(e *colly.HTMLElement) {
 		fmt.Println("NEXT HIT")
 		e.Request.Visit(e.ChildAttr("a", "href"))
 	})
